@@ -15,6 +15,8 @@
  */
 package sample.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
@@ -24,7 +26,10 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.reactive.function.client.ServletOAuth2AuthorizedClientExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+import sample.web.AuthorizationController;
 
 /**
  * @author Joe Grandja
@@ -33,12 +38,16 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class WebClientConfig {
 
+	private static final Logger log = LoggerFactory.getLogger(AuthorizationController.class);
+
 	@Bean
 	WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager) {
 		ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client =
 				new ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
 		return WebClient.builder()
 				.apply(oauth2Client.oauth2Configuration())
+				.filter(logRequest())
+				.filter(logResponse())
 				.build();
 	}
 
@@ -58,5 +67,29 @@ public class WebClientConfig {
 		authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
 
 		return authorizedClientManager;
+	}
+
+	ExchangeFilterFunction logRequest() {
+		return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
+			StringBuilder sb = new StringBuilder("Request:\n");
+			sb.append(clientRequest.url() + "\n");
+			clientRequest
+					.headers()
+					.forEach((name, values) -> values.forEach(value -> sb.append(name + ":" + value + "\n")));
+			log.info(sb.toString());
+			return Mono.just(clientRequest);
+		});
+	}
+
+	ExchangeFilterFunction logResponse() {
+		return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
+			StringBuilder sb = new StringBuilder("Response:\n");
+			clientResponse
+					.headers()
+					.asHttpHeaders()
+					.forEach((name, values) -> values.forEach(value -> sb.append(name + ":" + value + "\n")));
+			log.info(sb.toString());
+			return Mono.just(clientResponse);
+		});
 	}
 }
