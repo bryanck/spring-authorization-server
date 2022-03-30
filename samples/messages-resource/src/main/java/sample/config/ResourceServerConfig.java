@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 
 /**
  * @author Joe Grandja
@@ -37,7 +38,7 @@ public class ResourceServerConfig {
 					.and()
 			.oauth2ResourceServer()
 				.jwt();
-		return http.build();
+		return http.addFilterBefore(new LoggingFilter(), SecurityContextPersistenceFilter.class).build();
 	}
 	// @formatter:on
 

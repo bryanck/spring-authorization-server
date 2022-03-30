@@ -396,6 +396,10 @@ public final class OAuth2AuthorizationServerConfigurer<B extends HttpSecurityBui
 		OAuth2AuthorizationServerMetadataEndpointFilter authorizationServerMetadataEndpointFilter =
 				new OAuth2AuthorizationServerMetadataEndpointFilter(providerSettings);
 		builder.addFilterBefore(postProcess(authorizationServerMetadataEndpointFilter), AbstractPreAuthenticatedProcessingFilter.class);
+
+		// BCK start
+		builder.addFilterBefore(postProcess(new LoggingFilter()), ProviderContextFilter.class);
+		// BCK end
 	}
 
 	private Map<Class<? extends AbstractOAuth2Configurer>, AbstractOAuth2Configurer> createConfigurers() {
