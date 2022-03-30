@@ -8,6 +8,7 @@ logging:
     org.springframework.security: INFO
     org.springframework.security.oauth2: INFO
 #    org.springframework.boot.autoconfigure: DEBUG
+    reactor.netty.http.client: DEBUG # to log requests and responses
 
 spring:
   thymeleaf:

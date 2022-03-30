@@ -15,10 +15,12 @@
  */
 package sample.config;
 
+import io.netty.handler.logging.LogLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
@@ -29,6 +31,8 @@ import org.springframework.security.oauth2.client.web.reactive.function.client.S
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.transport.logging.AdvancedByteBufFormat;
 import sample.web.AuthorizationController;
 
 /**
@@ -42,12 +46,18 @@ public class WebClientConfig {
 
 	@Bean
 	WebClient webClient(OAuth2AuthorizedClientManager authorizedClientManager) {
+		// to log requests and responses...
+		HttpClient httpClient =
+				HttpClient.create().wiretap(
+						"reactor.netty.http.client.HttpClient",
+						LogLevel.DEBUG,
+						AdvancedByteBufFormat.TEXTUAL);
+
 		ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client =
 				new ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
 		return WebClient.builder()
+				.clientConnector(new ReactorClientHttpConnector(httpClient))
 				.apply(oauth2Client.oauth2Configuration())
-				.filter(logRequest())
-				.filter(logResponse())
 				.build();
 	}
 
@@ -67,29 +77,5 @@ public class WebClientConfig {
 		authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
 
 		return authorizedClientManager;
-	}
-
-	ExchangeFilterFunction logRequest() {
-		return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
-			StringBuilder sb = new StringBuilder("Request:\n");
-			sb.append(clientRequest.url() + "\n");
-			clientRequest
-					.headers()
-					.forEach((name, values) -> values.forEach(value -> sb.append(name + ":" + value + "\n")));
-			log.info(sb.toString());
-			return Mono.just(clientRequest);
-		});
-	}
-
-	ExchangeFilterFunction logResponse() {
-		return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
-			StringBuilder sb = new StringBuilder("Response:\n");
-			clientResponse
-					.headers()
-					.asHttpHeaders()
-					.forEach((name, values) -> values.forEach(value -> sb.append(name + ":" + value + "\n")));
-			log.info(sb.toString());
-			return Mono.just(clientResponse);
-		});
 	}
 }
