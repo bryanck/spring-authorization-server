@@ -5,6 +5,8 @@ dependencies {
 	compile 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	compile 'org.springframework.boot:spring-boot-starter-security'
 	compile project(':spring-security-oauth2-authorization-server')
+	// Fix for M1 Mac DNS issues
+	runtimeOnly group: "io.netty", name: "netty-resolver-dns-native-macos", classifier: "osx-aarch_64"
 
 	testCompile 'org.springframework.boot:spring-boot-starter-test'
 	testCompile 'org.springframework.security:spring-security-test'

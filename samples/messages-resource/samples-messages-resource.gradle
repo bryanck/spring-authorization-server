@@ -4,4 +4,6 @@ dependencies {
 	compile 'org.springframework.boot:spring-boot-starter-web'
 	compile 'org.springframework.boot:spring-boot-starter-security'
 	compile 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	// Fix for M1 Mac DNS issues
+	runtimeOnly group: "io.netty", name: "netty-resolver-dns-native-macos", classifier: "osx-aarch_64"
 }
